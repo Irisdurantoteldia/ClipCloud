@@ -1,224 +1,173 @@
-import React, { useState } from 'react';
-import { View, Text, StyleSheet, TextInput, TouchableOpacity, Image } from 'react-native';
-import * as ImagePicker from 'expo-image-picker'; // Importem la llibreria d'Expo per seleccionar imatges
+import React, { useEffect, useState } from 'react';
+import { View, Text, TouchableOpacity, StyleSheet, Image, Alert, Linking, TextInput } from 'react-native';
+import { useNavigation } from '@react-navigation/native';
 import FSection from '../components/FSection';
+import { auth } from '../Firebase/FirebaseConfig';
+import { Ionicons } from '@expo/vector-icons';
 
-export default function Account({ navigation }) {
-  const [username] = useState("User1"); 
-  const [password, setPassword] = useState("");
-  const [isPasswordVisible, setIsPasswordVisible] = useState(false);
-  const [profileImage, setProfileImage] = useState(null); 
+export default function Profile() {
+  const navigation = useNavigation();
+  const [user, setUser] = useState(null);
+  const [email, setEmail] = useState('');
 
-  const togglePasswordVisibility = () => {
-    setIsPasswordVisible(!isPasswordVisible);
+  useEffect(() => {
+    const currentUser = auth.currentUser;
+    if (currentUser) {
+      setUser(currentUser);
+      setEmail(currentUser.email);
+    }
+  }, []);
+
+  const handleLogout = () => {
+    auth
+      .signOut()
+      .then(() => {
+        navigation.replace('Login');
+      })
+      .catch((error) => {
+        Alert.alert('Error', 'No es pot tancar la sessió. Prova més tard.');
+        console.error(error);
+      });
   };
 
-  const handleImagePicker = async () => {
-    let result = await ImagePicker.launchImageLibraryAsync({
-      mediaTypes: ImagePicker.MediaTypeOptions.Images,
-      allowsEditing: true,
-      aspect: [4, 4], // Si vols retallar la imatge després de seleccionar-la
-      quality: 1, // Qualitat màxima
-    });
-
-    if (!result.cancelled) {
-      setProfileImage(result.uri); // Guardem el camí de la imatge seleccionada
-    }
+  const handleSocialLink = (url) => {
+    Linking.openURL(url);
   };
 
   return (
     <View style={styles.container}>
-      {/* Secció de configuració amb recuadro */}
-      <View style={styles.settingsContainer}>
-        <View style={styles.box}>
-          {/* Foto de perfil i canvi */}
-          <View style={styles.profileContainer}>
-            {profileImage ? (
-              <Image source={{ uri: profileImage }} style={styles.profileImage} />
-            ) : (
-              <Text style={styles.photoText}>👤</Text>
-            )}
-            <TouchableOpacity style={styles.changeButton} onPress={handleImagePicker}>
-              <Text style={styles.changeButtonText}>Change</Text>
-            </TouchableOpacity>
-          </View>
+      <View style={styles.profileContainer}>
+        <Image source={{ uri: user?.photoURL || 'https://via.placeholder.com/150' }} style={styles.profileImage} />
 
-          {/* Nom d'usuari (inmodificable) */}
-          <View style={styles.fieldContainer}>
-            <Text style={styles.fieldLabel}>Username</Text>
-            <Text style={styles.usernameText}>{username}</Text>
-          </View>
+        {/* Nom d'usuari (correu electrònic, no editable) */}
+        <TextInput
+          style={[styles.inputField, { color: '#888' }]}
+          value={email}
+          editable={false}
+          placeholder="El teu correu electrònic"
+        />
 
-          {/* Contrassenya amb funcionalitat de mostrar/ocultar */}
-          <View style={styles.fieldContainer}>
-            <Text style={styles.fieldLabel}>Password</Text>
-            <TextInput 
-              style={styles.inputField} 
-              placeholder="Write here."
-              secureTextEntry={!isPasswordVisible}
-              value={password}
-              onChangeText={setPassword}
-            />
-            <TouchableOpacity onPress={togglePasswordVisibility} style={styles.toggleButton}>
-              <Text style={styles.toggleButtonText}>
-                {isPasswordVisible ? "Hide" : "Show"}
-              </Text>
-            </TouchableOpacity>
-          </View>
+        <View style={styles.separator} />
 
-          {/* Descripció */}
-          <Text style={styles.descriptionTitle}>Description</Text>
-          <TextInput 
-            style={styles.inputDescription} 
-            placeholder="Write here." 
-            multiline={true} 
-          />
+        {/* Xarxes socials */}
+        <View style={styles.socialButtonsContainer}>
+          <TouchableOpacity style={styles.socialButton} onPress={() => handleSocialLink('https://www.instagram.com/')}>
+            <Image source={require('../assets/instagramLogo.png')} style={styles.socialIcon} />
+          </TouchableOpacity>
+
+          <TouchableOpacity style={styles.socialButton} onPress={() => handleSocialLink('https://www.youtube.com/')}>
+            <Image source={require('../assets/ytbLogo.png')} style={styles.socialIcon} />
+          </TouchableOpacity>
         </View>
 
-        {/* Botó de tancar sessió */}
-        <TouchableOpacity style={styles.logoutButton}>
-          <Text style={styles.logoutText}>Log Out</Text>
+        <View style={styles.separator} />
+
+        {/* Botó per tancar sessió */}
+        <Text style={styles.logoutPrompt}>Vols tancar sessió?</Text>
+        <TouchableOpacity style={styles.logoutButton} onPress={handleLogout}>
+          <Text style={styles.logoutText}>Tancar Sessió</Text>
         </TouchableOpacity>
       </View>
 
-      {/* Barra de navegació inferior */}
       <View style={styles.bottomBar}>
-        <FSection 
-          currentSection={5} 
+        <FSection
+          currentSection={5}
           onPress={(id) => {
-            if (id === 1) navigation.navigate("All"); 
+            if (id === 1) navigation.navigate("All");
             else if (id === 2) navigation.navigate("Feed");
-            else if (id === 3) navigation.navigate("Add"); 
-            else if (id === 4) navigation.navigate("Favorites"); 
-            else if (id === 5) navigation.navigate("Account"); 
-          }} 
+            else if (id === 3) navigation.navigate("Add");
+            else if (id === 4) navigation.navigate("Favorites");
+            else if (id === 5) navigation.navigate("Account");
+          }}
         />
       </View>
     </View>
   );
 }
 
-// Estils
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#FFF', 
-  },
-  topBar: {
-    height: 80,
-    backgroundColor: '#FFF',
-    borderBottomWidth: 1,
-    borderBottomColor: '#ccc',
-    justifyContent: 'flex-end',
+    backgroundColor: '#1f1f1f',
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   bottomBar: {
     position: 'absolute',
     bottom: 0,
     left: 0,
     right: 0,
-    backgroundColor: '#FFF',
+    backgroundColor: '#000',
+    borderTopColor: '#673dff',
     borderTopWidth: 1,
-    borderTopColor: '#ccc',
-    justifyContent: 'flex-end',
-  },
-  settingsContainer: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    paddingTop: 20,
-  },
-  box: {
-    backgroundColor: '#E5E5E5',
-    padding: 20,
-    borderRadius: 10,
-    borderWidth: 1,
-    borderColor: '#A0A0A0',
-    width: '90%',
-    maxWidth: 400,
   },
   profileContainer: {
-    flexDirection: 'row',
+    width: '85%',
+    backgroundColor: '#241178',
+    borderRadius: 10,
+    padding: 20,
+    marginTop: -50,
     alignItems: 'center',
-    marginBottom: 15,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.1,
+    shadowRadius: 10,
+    elevation: 5,
   },
   profileImage: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    marginRight: 10,
-  },
-  photoText: {
-    fontSize: 40,
-    marginRight: 10,
-  },
-  changeButton: {
-    backgroundColor: '#FFF',
-    padding: 5,
-    borderRadius: 5,
-    shadowColor: '#000',
-    shadowOpacity: 0.2,
-    shadowRadius: 3,
-    shadowOffset: { width: 0, height: 2 },
-  },
-  changeButtonText: {
-    color: '#6A6A6A',
-  },
-  fieldContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    width: 100,
+    height: 100,
+    borderRadius: 50,
+    borderWidth: 3,
+    borderColor: '#673dff',
     marginBottom: 15,
   },
-  fieldLabel: {
-    width: 80,
-    fontSize: 16,
-    fontWeight: 'bold',
-  },
-  usernameText: {
-    flex: 1,
-    fontSize: 16,
-    color: '#333',
-    paddingVertical: 10,
-  },
   inputField: {
-    flex: 1,
-    height: 40,
-    borderColor: '#B0B0B0',
+    width: '100%',
+    padding: 10,
+    marginBottom: 15,
+    borderRadius: 8,
+    backgroundColor: '#333',
+    color: '#fff',
     borderWidth: 1,
-    paddingHorizontal: 10,
-    backgroundColor: '#FFF',
+    borderColor: '#673dff',
   },
-  toggleButton: {
-    padding: 5,
-    marginLeft: 5,
+  separator: {
+    width: '100%',
+    height: 1,
+    backgroundColor: '#673dff',
+    marginVertical: 15,
   },
-  toggleButtonText: {
-    color: '#6A6A6A',
-    fontSize: 14,
+  socialButtonsContainer: {
+    flexDirection: 'row',
+    justifyContent: 'center',
+    marginBottom: 15,
   },
-  descriptionTitle: {
+  socialButton: {
+    marginHorizontal: 15,
+  },
+  socialIcon: {
+    width: 30,
+    height: 30,
+    resizeMode: 'contain',
+  },
+  logoutPrompt: {
+    color: '#fff',
     fontSize: 16,
     fontWeight: 'bold',
     marginBottom: 10,
   },
-  inputDescription: {
-    height: 100,
-    width: '100%',
-    borderColor: '#B0B0B0',
-    borderWidth: 1,
-    padding: 10,
-    textAlignVertical: 'top',
-    backgroundColor: '#FFF',
-  },
   logoutButton: {
-    backgroundColor: '#F44336',
-    padding: 15,
-    borderRadius: 5,
+    paddingVertical: 12,
+    paddingHorizontal: 20,
+    backgroundColor: '#f44336',
+    borderRadius: 8,
+    width: '100%',
     alignItems: 'center',
-    marginTop: 20,
   },
   logoutText: {
-    color: '#FFF',
-    fontWeight: 'bold',
+    color: '#fff',
     fontSize: 16,
+    fontWeight: 'bold',
   },
 });

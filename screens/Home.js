@@ -63,7 +63,7 @@ const styles = StyleSheet.create({
     marginVertical: 10, // Espai entre botons
     borderRadius: 10, // Arrodoniment dels racons
     overflow: 'hidden', // Amaga les parts que sobresurten
-    backgroundColor: '#572364', // Color lila fosc
+    backgroundColor: '#2510a3', // Color lila fosc
     paddingVertical: 15, // Espai vertical dins del botó
     alignItems: 'center', // Centra el text horitzontalment
   },

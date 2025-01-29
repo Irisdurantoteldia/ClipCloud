@@ -8,7 +8,8 @@ export default function FButton({
     id,
     isSelected,
     onPress,
-    isCircular = false // Propietat per determinar si és circular
+    isCircular = false, // Propietat per determinar si és circular
+    color = "#9265ff" // El color lila per defecte
 }) {
     return (
         <TouchableOpacity onPress={() => onPress(id)} style={styles.buttonContainer}>
@@ -16,9 +17,10 @@ export default function FButton({
                 <Icon
                     name={isSelected ? selectedIcon : unselectedIcon}
                     size={isCircular ? 40 : 30} // Mida de l'icona
+                    color={isSelected ? color : "#2510a3"} // Lila si seleccionat, gris si no
                     style={styles.icon}
                 />
-                {isSelected && <View style={styles.selectedLine} />}
+                {isSelected && <View style={[styles.selectedLine, { backgroundColor: color }]} />}
             </View>
         </TouchableOpacity>
     );
@@ -48,7 +50,6 @@ const styles = StyleSheet.create({
     },
     selectedLine: {
         height: 2,
-        backgroundColor: 'black', // Línia negra sota l'icona seleccionada
         width: 50,
         marginTop: 5,
     },

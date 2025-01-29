@@ -1,31 +1,45 @@
-import React from 'react';
-import { View, Text, TextInput, StyleSheet, ImageBackground, TouchableOpacity } from 'react-native';
+import React, { useState } from 'react';
+import { View, Text, TextInput, StyleSheet, ImageBackground, TouchableOpacity, Alert } from 'react-native';
 import FSection from '../components/FSection';
+import { auth, db } from '../Firebase/FirebaseConfig';
+import { createUserWithEmailAndPassword } from 'firebase/auth';
+import { doc, setDoc } from 'firebase/firestore';
 
 const backgroundImage = require('../assets/fondo.jpg');
 
 export default function SignUp({ navigation }) {
-    const handleSignUp = () => {
-        navigation.navigate('All');
+    const [email, setEmail] = useState('');
+    const [password, setPassword] = useState('');
+    const [confirmPassword, setConfirmPassword] = useState('');
+
+    const handleSignUp = async () => {
+        if (password === confirmPassword) {
+            try {
+                const userCredential = await createUserWithEmailAndPassword(auth, email, password);
+                const user = userCredential.user;
+
+                await setDoc(doc(db, 'users', user.uid), {
+                    email: user.email,
+                    createdAt: new Date(),
+                });
+
+                navigation.navigate('All');
+            } catch (error) {
+                Alert.alert('Error', error.message);
+            }
+        } else {
+            Alert.alert('Error', 'Passwords do not match');
+        }
     };
 
     return (
         <ImageBackground source={backgroundImage} style={styles.background}>
             <View style={styles.loginBox}>
                 <View style={styles.topButtons}>
-                    {/* Botó Login: Gris perquè estem en la pàgina de Sign Up */}
-                    <TouchableOpacity
-                        style={styles.switchButton}
-                        onPress={() => navigation.navigate('Login')}
-                    >
+                    <TouchableOpacity style={styles.switchButton} onPress={() => navigation.navigate('Login')}>
                         <Text style={styles.switchButtonText}>Login</Text>
                     </TouchableOpacity>
-
-                    {/* Botó SignUp: Lila perquè estem en la pàgina de Sign Up */}
-                    <TouchableOpacity
-                        style={[styles.switchButton, styles.activeButton]}
-                        onPress={() => navigation.navigate('SignUp')}
-                    >
+                    <TouchableOpacity style={[styles.switchButton, styles.activeButton]}>
                         <Text style={styles.switchButtonText}>Sign Up</Text>
                     </TouchableOpacity>
                 </View>
@@ -35,6 +49,8 @@ export default function SignUp({ navigation }) {
                 <TextInput
                     style={styles.input}
                     placeholder="User..."
+                    value={email}
+                    onChangeText={setEmail}
                     keyboardType="email-address"
                     placeholderTextColor="#ccc"
                 />
@@ -42,6 +58,8 @@ export default function SignUp({ navigation }) {
                 <TextInput
                     style={styles.input}
                     placeholder="Password..."
+                    value={password}
+                    onChangeText={setPassword}
                     secureTextEntry
                     placeholderTextColor="#ccc"
                 />
@@ -49,6 +67,8 @@ export default function SignUp({ navigation }) {
                 <TextInput
                     style={styles.input}
                     placeholder="Repeat Password..."
+                    value={confirmPassword}
+                    onChangeText={setConfirmPassword}
                     secureTextEntry
                     placeholderTextColor="#ccc"
                 />
@@ -70,28 +90,6 @@ const styles = StyleSheet.create({
         alignItems: 'center',
         backgroundColor: '#121212',
     },
-    topButtons: {
-        flexDirection: 'row',
-        justifyContent: 'space-between',
-        width: '100%',
-        marginBottom: 20,
-        paddingHorizontal: 20,
-    },
-    switchButton: {
-        backgroundColor: '#333', // Gris per els botons inactius
-        borderRadius: 20,
-        paddingVertical: 10,
-        marginHorizontal: 10,
-        flex: 1,
-        alignItems: 'center',
-    },
-    activeButton: {
-        backgroundColor: '#572364', // Lila per botó actiu
-    },
-    switchButtonText: {
-        color: '#fff',
-        fontWeight: 'bold',
-    },
     loginBox: {
         backgroundColor: 'rgba(0, 0, 0, 0.7)',
         borderRadius: 20,
@@ -103,17 +101,39 @@ const styles = StyleSheet.create({
         shadowOpacity: 0.5,
         shadowRadius: 8,
     },
+    topButtons: {
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        width: '100%',
+        marginBottom: 20,
+        paddingHorizontal: 20,
+    },
+    switchButton: {
+        backgroundColor: '#333',
+        borderRadius: 20,
+        paddingVertical: 10,
+        marginHorizontal: 10,
+        flex: 1,
+        alignItems: 'center',
+    },
+    activeButton: {
+        backgroundColor: '#2510a3',
+    },
+    switchButtonText: {
+        color: '#fff',
+        fontWeight: 'bold',
+    },
     title: {
         fontSize: 20,
         fontWeight: 'bold',
         marginBottom: 20,
-        color: '#572364',
+        color: '#2510a3',
         textAlign: 'center',
     },
     input: {
         width: '100%',
         height: 50,
-        borderColor: '#572364',
+        borderColor: '#673dff',
         borderWidth: 1,
         borderRadius: 10,
         paddingHorizontal: 15,
@@ -122,7 +142,7 @@ const styles = StyleSheet.create({
         color: '#fff',
     },
     button: {
-        backgroundColor: '#572364',
+        backgroundColor: '#2510a3',
         paddingVertical: 15,
         paddingHorizontal: 40,
         borderRadius: 10,
@@ -135,3 +155,4 @@ const styles = StyleSheet.create({
         fontWeight: 'bold',
     },
 });
+

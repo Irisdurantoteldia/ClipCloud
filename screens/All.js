@@ -1,14 +1,14 @@
 import React, { useEffect, useState } from 'react';
-import { View, FlatList, StyleSheet, Text } from 'react-native';
+import { View, FlatList, StyleSheet, Text, TouchableOpacity } from 'react-native';
 import { collection, getDocs } from 'firebase/firestore';
-import db from '../Firebase/FirebaseConfig';
+import { db } from '../Firebase/FirebaseConfig';
 import FSection from '../components/FSection';
-import VideoCard from '../components/VideoCard';
+import { WebView } from 'react-native-webview';
 
 export default function All({ navigation }) {
   const [data, setData] = useState([]);
 
-  // Funció per obtenir dades de la col·lecció ClipCloud
+  // Funció per obtenir la informació dels vídeos de Firestore
   const fetchData = async () => {
     try {
       const querySnapshot = await getDocs(collection(db, 'ClipCloud'));
@@ -16,31 +16,47 @@ export default function All({ navigation }) {
         id: doc.id,
         ...doc.data(),
       }));
-      console.log(dataFromFirestore); // Debug: Visualitzar dades al console.log
+      console.log("Data from Firestore:", dataFromFirestore); // Log de les dades obtingudes
       setData(dataFromFirestore);
     } catch (error) {
       console.error("Error fetching data: ", error);
     }
   };
 
-  // Executa fetchData quan el component es munta
   useEffect(() => {
     fetchData();
   }, []);
 
-  useEffect(() => {
-    // Personalitza el header aquí
-    navigation.setOptions({
-      headerStyle: {
-        backgroundColor: '#121212', // Barra superior molt fosca
-      },
-      headerTintColor: '#572364', // Color lila per al text i les icones del header
-    });
-  }, [navigation]);
+  // Funció per obrir el vídeo a la nova pantalla
+  const openVideo = (videoUrl) => {
+    let videoId = '';
+    console.log("Video URL:", videoUrl);  // Log per veure la URL del vídeo
+
+    if (videoUrl.includes('youtube.com') || videoUrl.includes('youtu.be')) {
+      if (videoUrl.includes('youtube.com')) {
+        const match = videoUrl.split('v=')[1]?.split('&')[0];
+        if (match) {
+          videoId = match;
+        }
+      } else if (videoUrl.includes('youtu.be')) {
+        videoId = videoUrl.split('youtu.be/')[1];
+      }
+    }
+
+    console.log("Extracted Video ID:", videoId);  // Log per comprovar si el videoId és correcte
+    if (videoId) {
+      const embedUrl = `https://www.youtube.com/embed/${videoId}`;
+      console.log("Embed URL:", embedUrl);  // Log per veure l'embed URL
+
+      // Redirigeix a la pantalla del vídeo amb el vídeoId com a paràmetre
+      navigation.navigate('VideoPlayer', { videoId });
+    } else {
+      console.error("Invalid video URL:", videoUrl);  // Si no es pot extreure el videoId
+    }
+  };
 
   return (
     <View style={styles.container}>
-      {/* Mostra un missatge mentre es carreguen les dades */}
       {data.length === 0 ? (
         <View style={styles.noDataContainer}>
           <Text style={styles.loadingText}>Loading...</Text>
@@ -50,28 +66,19 @@ export default function All({ navigation }) {
           contentContainerStyle={styles.listContainer}
           data={data}
           renderItem={({ item }) => (
-            <VideoCard
-              title={item.Title || "No Title"}
-              singers={item.Singers || "Unknown Artist"}
-              imageUrl={item.Image_URL || './assets/images/default_image.jpg'}
-              url={item.Url || ""}
-              color="#572364"  // Passant el color lila aquí
-              onPress={() =>
-                navigation.navigate("VideoDetails", {
-                  title: item.Title,
-                  singers: item.Singers,
-                  imageUrl: item.Image_URL,
-                  url: item.Url,
-                })
-              }
-            />
+            <TouchableOpacity
+              style={styles.videoCard}
+              onPress={() => openVideo(item.Url)} // Passa l'URL del vídeo
+            >
+              <Text style={styles.title}>{item.Title || "No Title"}</Text>
+              <Text style={styles.singers}>{item.Singers || "Unknown Artist"}</Text>
+            </TouchableOpacity>
           )}
           keyExtractor={(item) => item.id}
           style={styles.flatList}
         />
       )}
 
-      {/* Barra inferior */}
       <View style={styles.bottomBar}>
         <FSection
           currentSection={1}
@@ -89,67 +96,29 @@ export default function All({ navigation }) {
 }
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: '#121212', // Fons fosc per la pàgina general
-  },
-  listContainer: {
-    paddingBottom: 100,
-    paddingTop: 10,
-    paddingHorizontal: 16,
+  container: { flex: 1, backgroundColor: '#1d1d1d' },
+  listContainer: { paddingBottom: 100, paddingTop: 10, paddingHorizontal: 16 },
+  noDataContainer: { flex: 1, justifyContent: 'center', alignItems: 'center' },
+  loadingText: { color: '#bbb', fontSize: 18, fontWeight: 'bold' },
+  flatList: { flexGrow: 1 },
+  videoCard: {
+    marginBottom: 15,
+    padding: 10,
+    backgroundColor: '#241178',
+    borderColor: '#673dff',
+    borderWidth: 1,
+    borderRadius: 8,
     alignItems: 'center',
   },
-  noDataContainer: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  loadingText: {
-    color: '#bbb', // Text gris clar per la càrrega
-    fontSize: 18,
-    fontWeight: 'bold',
-  },
-  flatList: {
-    flexGrow: 1,
-  },
+  title: { color: '#ffffff', fontSize: 18, fontWeight: 'bold' },
+  singers: { color: '#bbb', fontSize: 14, marginTop: 5 },
   bottomBar: {
     position: 'absolute',
     bottom: 0,
     left: 0,
     right: 0,
-    backgroundColor: '#1A1A1A', // Barra inferior més fosca
-    borderTopWidth: 2,
-    borderTopColor: '#572364', // Línia lila a la part superior de la barra
-    paddingBottom: 10,
-    paddingTop: 10,
-    flexDirection: 'row',
-    justifyContent: 'space-around',
-    elevation: 8, // Ombra suau per donar efecte flotant
-  },
-  header: {
-    backgroundColor: '#121212', // Barra superior fosca
-    paddingTop: 20,
-    paddingBottom: 10,
-    alignItems: 'center',
-    justifyContent: 'center',
-    borderBottomWidth: 1,
-    borderBottomColor: '#572364', // Líniua lila a la part inferior de la barra superior
-  },
-  headerText: {
-    fontSize: 20,
-    fontWeight: 'bold',
-    color: '#572364', // Lila per al text del header
-  },
-  videoCard: {
-    backgroundColor: '#1A1A1A', // Fons fosc per les cartes (més gris)
-    borderRadius: 10,
-    marginBottom: 20,
-    padding: 15,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.2,
-    shadowRadius: 3.8,
-    elevation: 5,
-    marginHorizontal: 10,
+    backgroundColor: '#000',
+    borderTopColor: '#673dff',
+    borderTopWidth: 1,
   },
 });
